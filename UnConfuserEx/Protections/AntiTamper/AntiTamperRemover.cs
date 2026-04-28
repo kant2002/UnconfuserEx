@@ -1,18 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using SRE = System.Reflection.Emit;
 using System.Text;
-using System.Threading.Tasks;
 using dnlib.DotNet;
 using dnlib.DotNet.Emit;
 using dnlib.PE;
-using UnConfuserEx.Protections;
 using System.IO;
 using UnConfuserEx.Protections.AntiTamper;
 using log4net;
-using de4dot.blocks;
 
 namespace UnConfuserEx.Protections
 {

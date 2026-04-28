@@ -2,10 +2,7 @@
 using dnlib.DotNet.Emit;
 using MSILEmulator;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using X86Emulator;
 
 namespace UnConfuserEx.Protections.Delegates

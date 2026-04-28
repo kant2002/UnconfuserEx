@@ -1,5 +1,4 @@
 ﻿using dnlib.DotNet;
-using dnlib.DotNet.Emit;
 using log4net;
 using System;
 using System.Collections.Generic;

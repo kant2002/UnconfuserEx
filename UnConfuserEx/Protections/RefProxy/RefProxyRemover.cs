@@ -1,12 +1,9 @@
-﻿using de4dot.blocks.cflow;
-using dnlib.DotNet;
+﻿using dnlib.DotNet;
 using dnlib.DotNet.Emit;
 using dnlib.DotNet.MD;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace UnConfuserEx.Protections.Delegates
 {

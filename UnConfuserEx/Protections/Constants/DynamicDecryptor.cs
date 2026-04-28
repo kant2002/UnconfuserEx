@@ -3,7 +3,6 @@ using MSILEmulator;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using SRE = System.Reflection.Emit;
 
 namespace UnConfuserEx.Protections.Constants
 {
