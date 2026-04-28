@@ -1,9 +1,8 @@
-﻿namespace UnConfuserEx.Protections.Constants
+﻿namespace UnConfuserEx.Protections.Constants;
+
+internal interface IDecryptor
 {
-    internal interface IDecryptor
-    {
 
-        byte[] DecryptData(uint[] data, uint[] key);
+    byte[] DecryptData(uint[] data, uint[] key);
 
-    }
 }

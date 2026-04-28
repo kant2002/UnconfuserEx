@@ -4,96 +4,95 @@ using System.Collections.Generic;
 using System.Linq;
 using UnConfuserEx.Protections.Renamer;
 
-namespace UnConfuserEx.Protections
+namespace UnConfuserEx.Protections;
+
+internal class UnicodeRemover : IProtection
 {
-    internal class UnicodeRemover : IProtection
+    public string Name => "Renamer";
+
+    private ModuleDefMD? Module = null;
+    private Dictionary<TypeDef, TypeInfo> NewTypeInfo = new();
+
+    public bool IsPresent(ref ModuleDefMD module)
     {
-        public string Name => "Renamer";
+        return true;
+    }
 
-        private ModuleDefMD? Module = null;
-        private Dictionary<TypeDef, TypeInfo> NewTypeInfo = new();
+    public bool Remove(ref ModuleDefMD module)
+    {
+        Module = module;
 
-        public bool IsPresent(ref ModuleDefMD module)
+        RenameTypeDefs();
+        RenameTypeRefs();
+        RenameMemberRefs();
+
+        return true;
+    }
+
+    private void RenameTypeDefs()
+    {
+        foreach (var type in Module!.GetTypes())
         {
-            return true;
+            NewTypeInfo[type] = new TypeInfo(type);
         }
+    }
 
-        public bool Remove(ref ModuleDefMD module)
+    private void RenameTypeRefs()
+    {
+        foreach (var typeRef in Module!.GetTypeRefs())
         {
-            Module = module;
-
-            RenameTypeDefs();
-            RenameTypeRefs();
-            RenameMemberRefs();
-
-            return true;
-        }
-
-        private void RenameTypeDefs()
-        {
-            foreach (var type in Module!.GetTypes())
+            if (Utils.IsInvalidName(typeRef.Name))
             {
-                NewTypeInfo[type] = new TypeInfo(type);
+                throw new NotImplementedException();
             }
         }
+    }
 
-        private void RenameTypeRefs()
+    private void RenameMemberRefs()
+    {
+        foreach (var methodDef in Module!.GetTypes().SelectMany(type => type.Methods))
         {
-            foreach (var typeRef in Module!.GetTypeRefs())
+            foreach (var ov in methodDef.Overrides)
             {
-                if (Utils.IsInvalidName(typeRef.Name))
-                {
-                    throw new NotImplementedException();
-                }
+                RenameMemberRef(ov.MethodBody);
+                RenameMemberRef(ov.MethodDeclaration);
             }
-        }
 
-        private void RenameMemberRefs()
-        {
-            foreach (var methodDef in Module!.GetTypes().SelectMany(type => type.Methods))
+            if (!methodDef.HasBody)
             {
-                foreach (var ov in methodDef.Overrides)
-                {
-                    RenameMemberRef(ov.MethodBody);
-                    RenameMemberRef(ov.MethodDeclaration);
-                }
+                continue;
+            }
 
-                if (!methodDef.HasBody)
+            foreach (var instr in methodDef.Body.Instructions)
+            {
+                if (instr.Operand is MemberRef || instr.Operand is MethodSpec)
                 {
-                    continue;
-                }
-
-                foreach (var instr in methodDef.Body.Instructions)
-                {
-                    if (instr.Operand is MemberRef || instr.Operand is MethodSpec)
-                    {
-                        RenameMemberRef((IMemberRef)instr.Operand);
-                    }
+                    RenameMemberRef((IMemberRef)instr.Operand);
                 }
             }
         }
+    }
 
-        private void RenameMemberRef(IMemberRef memberRef)
+    private void RenameMemberRef(IMemberRef memberRef)
+    {
+        if (Utils.IsInvalidName(memberRef.Name))
         {
-            if (Utils.IsInvalidName(memberRef.Name))
+            var declaringType = memberRef.DeclaringType.ResolveTypeDefThrow();
+            var typeInfo = NewTypeInfo[declaringType];
+
+            if (memberRef.IsField)
             {
-                var declaringType = memberRef.DeclaringType.ResolveTypeDefThrow();
-                var typeInfo = NewTypeInfo[declaringType];
-
-                if (memberRef.IsField)
-                {
-                    memberRef.Name = typeInfo.FieldNames[memberRef.Name];
-                }
-                else if (memberRef.IsMethod)
-                {
-                    memberRef.Name = typeInfo.MethodNames[memberRef.Name];
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-
+                memberRef.Name = typeInfo.FieldNames[memberRef.Name];
             }
+            else if (memberRef.IsMethod)
+            {
+                memberRef.Name = typeInfo.MethodNames[memberRef.Name];
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
         }
     }
 }

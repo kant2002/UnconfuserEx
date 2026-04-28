@@ -1,34 +1,33 @@
 ﻿using SharpDisasm;
 using System.Collections.Generic;
 
-namespace X86Emulator.Instructions
+namespace X86Emulator.Instructions;
+
+internal class Mov : Instruction
 {
-    internal class Mov : Instruction
+    private Operand[] Operands;
+
+    public Mov(Operand[] operands)
     {
-        private Operand[] Operands;
+        Operands = operands;
+    }
 
-        public Mov(Operand[] operands)
+    public override void Emulate(Stack<int> stack, Registers registers)
+    {
+        Operand to = Operands[0];
+        Operand from = Operands[1];
+
+        int val;
+
+        if (from.Type == SharpDisasm.Udis86.ud_type.UD_OP_REG)
         {
-            Operands = operands;
+            val = registers.GetValue(from.Base);
+        }
+        else
+        {
+            val = from.LvalSDWord;
         }
 
-        public override void Emulate(Stack<int> stack, Registers registers)
-        {
-            Operand to = Operands[0];
-            Operand from = Operands[1];
-
-            int val;
-
-            if (from.Type == SharpDisasm.Udis86.ud_type.UD_OP_REG)
-            {
-                val = registers.GetValue(from.Base);
-            }
-            else
-            {
-                val = from.LvalSDWord;
-            }
-
-            registers.SetValue(to.Base, val);
-        }
+        registers.SetValue(to.Base, val);
     }
 }

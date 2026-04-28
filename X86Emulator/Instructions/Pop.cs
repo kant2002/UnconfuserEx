@@ -1,25 +1,24 @@
 ﻿using SharpDisasm;
 using System.Collections.Generic;
 
-namespace X86Emulator.Instructions
+namespace X86Emulator.Instructions;
+
+internal class Pop : Instruction
 {
-    internal class Pop : Instruction
+    private Operand? Operand = null;
+
+    public Pop(Operand? operand)
     {
-        private Operand? Operand = null;
+        Operand = operand;
+    }
 
-        public Pop(Operand? operand)
+    public override void Emulate(Stack<int> stack, Registers registers)
+    {
+        int val = stack.Pop();
+
+        if (Operand != null)
         {
-            Operand = operand;
-        }
-
-        public override void Emulate(Stack<int> stack, Registers registers)
-        {
-            int val = stack.Pop();
-
-            if (Operand != null)
-            {
-                registers.SetValue(Operand.Base, val);
-            }
+            registers.SetValue(Operand.Base, val);
         }
     }
 }

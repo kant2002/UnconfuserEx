@@ -10,113 +10,112 @@ using UnConfuserEx.Protections.Delegates;
 using UnConfuserEx.Protections.AntiDebug;
 using UnConfuserEx.Protections.AntiDump;
 
-namespace UnConfuserEx
+namespace UnConfuserEx;
+
+internal class UnConfuserEx
 {
-    internal class UnConfuserEx
+    static ILog Logger = LogManager.GetLogger("UnConfuserEx");
+
+    static int Main(string[] args)
     {
-        static ILog Logger = LogManager.GetLogger("UnConfuserEx");
+        XmlConfigurator.Configure(typeof(UnConfuserEx).Assembly.GetManifestResourceStream("UnConfuserEx.log4net.xml"));
 
-        static int Main(string[] args)
+        if (args.Length < 1 || args.Length > 2)
         {
-            XmlConfigurator.Configure(typeof(UnConfuserEx).Assembly.GetManifestResourceStream("UnConfuserEx.log4net.xml"));
+            Logger.Error("Usage: unconfuser.exe <module path> <output path>");
+            return 1;
+        }
 
-            if (args.Length < 1 || args.Length > 2)
+        var path = Path.GetFullPath(args[0]);
+        if (!File.Exists(path))
+        {
+            Logger.Error($"File {path} does not exist");
+            return 1;
+        }
+
+        // Load the module
+        ModuleContext context = new();
+        ModuleDefMD module = ModuleDefMD.Load(path, context);
+
+        var pipeline = new List<IProtection>
+        {
+            // If this is present, it MUST be removed first
+            new AntiTamperRemover(),
+            
+            // This must then be removed second
+            new ControlFlowRemover(),
+
+            // And these can all be removed in any order
+            new ResourcesRemover(),
+            new ConstantsRemover(),
+            new RefProxyRemover(),
+            new AntiDumpRemover(),
+            new UnicodeRemover(),
+
+            // Except for this, which requires constants to be removed
+            new AntiDebugRemover(),
+        };
+
+        foreach (var p in pipeline)
+        {
+            if (p.IsPresent(ref module))
             {
-                Logger.Error("Usage: unconfuser.exe <module path> <output path>");
-                return 1;
-            }
-
-            var path = Path.GetFullPath(args[0]);
-            if (!File.Exists(path))
-            {
-                Logger.Error($"File {path} does not exist");
-                return 1;
-            }
-
-            // Load the module
-            ModuleContext context = new();
-            ModuleDefMD module = ModuleDefMD.Load(path, context);
-
-            var pipeline = new List<IProtection>
-            {
-                // If this is present, it MUST be removed first
-                new AntiTamperRemover(),
-                
-                // This must then be removed second
-                new ControlFlowRemover(),
-
-                // And these can all be removed in any order
-                new ResourcesRemover(),
-                new ConstantsRemover(),
-                new RefProxyRemover(),
-                new AntiDumpRemover(),
-                new UnicodeRemover(),
-
-                // Except for this, which requires constants to be removed
-                new AntiDebugRemover(),
-            };
-
-            foreach (var p in pipeline)
-            {
-                if (p.IsPresent(ref module))
+                Logger.Info($"{p.Name} detected, attempting to remove");
+                try
                 {
-                    Logger.Info($"{p.Name} detected, attempting to remove");
-                    try
+                    if (p.Remove(ref module))
                     {
-                        if (p.Remove(ref module))
-                        {
-                            Logger.Info($"Successfully removed {p.Name} protection");
-                        }
-                        else
-                        {
-                            Logger.Error($"Failed to remove {p.Name} protection");
-                            return 1;
-                        }
+                        Logger.Info($"Successfully removed {p.Name} protection");
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Logger.Fatal($"Caught exception when trying to remove {p.Name} protection");
-                        Logger.Error(ex.ToString());
+                        Logger.Error($"Failed to remove {p.Name} protection");
                         return 1;
                     }
                 }
-            }
-
-            var newPath = $"{Path.GetDirectoryName(path)}\\{Path.GetFileNameWithoutExtension(path)}-deobfuscated{Path.GetExtension(path)}";
-            if (args.Length == 2)
-            {
-                // Use the user supplied path
-                newPath = args[1];
-            }
-
-            // Write the module back
-            Logger.Info($"All detected protections removed. Writing new module to {newPath}");
-
-            try
-            {
-                if (module.IsILOnly)
+                catch (Exception ex)
                 {
-                    ModuleWriterOptions writerOptions = new ModuleWriterOptions(module);
-                    module.Write(newPath, writerOptions);
-                }
-                else
-                {
-                    NativeModuleWriterOptions writerOptions = new NativeModuleWriterOptions(module, true);
-                    //writerOptions.Logger = DummyLogger.NoThrowInstance;
-                    module.NativeWrite(newPath, writerOptions);
+                    Logger.Fatal($"Caught exception when trying to remove {p.Name} protection");
+                    Logger.Error(ex.ToString());
+                    return 1;
                 }
             }
-            catch (Exception ex)
-            {
-                Logger.Error("Failed to write module");
-                Logger.Error(ex.ToString());
-                return 1;
-            }
-            Logger.Info("Deobfuscated module successfully written");
-
-            // Done
-            return 0;
         }
 
+        var newPath = $"{Path.GetDirectoryName(path)}\\{Path.GetFileNameWithoutExtension(path)}-deobfuscated{Path.GetExtension(path)}";
+        if (args.Length == 2)
+        {
+            // Use the user supplied path
+            newPath = args[1];
+        }
+
+        // Write the module back
+        Logger.Info($"All detected protections removed. Writing new module to {newPath}");
+
+        try
+        {
+            if (module.IsILOnly)
+            {
+                ModuleWriterOptions writerOptions = new ModuleWriterOptions(module);
+                module.Write(newPath, writerOptions);
+            }
+            else
+            {
+                NativeModuleWriterOptions writerOptions = new NativeModuleWriterOptions(module, true);
+                //writerOptions.Logger = DummyLogger.NoThrowInstance;
+                module.NativeWrite(newPath, writerOptions);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Failed to write module");
+            Logger.Error(ex.ToString());
+            return 1;
+        }
+        Logger.Info("Deobfuscated module successfully written");
+
+        // Done
+        return 0;
     }
+
 }

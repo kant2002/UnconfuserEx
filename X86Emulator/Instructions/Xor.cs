@@ -1,32 +1,31 @@
 ﻿using SharpDisasm;
 using System.Collections.Generic;
 
-namespace X86Emulator.Instructions
+namespace X86Emulator.Instructions;
+
+internal class Xor : Instruction
 {
-    internal class Xor : Instruction
+    private Operand[] Operands;
+
+    public Xor(Operand[] operands)
     {
-        private Operand[] Operands;
+        Operands = operands;
+    }
 
-        public Xor(Operand[] operands)
+    public override void Emulate(Stack<int> stack, Registers registers)
+    {
+        int dst = registers.GetValue(Operands[0].Base);
+        int src;
+        if (Operands[1].Type == SharpDisasm.Udis86.ud_type.UD_OP_REG)
         {
-            Operands = operands;
+            src = registers.GetValue(Operands[1].Base);
+        }
+        else
+        {
+            src = Operands[1].LvalSDWord;
         }
 
-        public override void Emulate(Stack<int> stack, Registers registers)
-        {
-            int dst = registers.GetValue(Operands[0].Base);
-            int src;
-            if (Operands[1].Type == SharpDisasm.Udis86.ud_type.UD_OP_REG)
-            {
-                src = registers.GetValue(Operands[1].Base);
-            }
-            else
-            {
-                src = Operands[1].LvalSDWord;
-            }
-
-            int result = src ^ dst;
-            registers.SetValue(Operands[0].Base, result);
-        }
+        int result = src ^ dst;
+        registers.SetValue(Operands[0].Base, result);
     }
 }

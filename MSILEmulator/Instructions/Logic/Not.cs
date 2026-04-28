@@ -1,12 +1,11 @@
-﻿namespace MSILEmulator.Instructions.Logic
-{
-    internal class Not
-    {
-        public static void Emulate(Context ctx)
-        {
-            int val = (int)ctx.Stack.Pop();
+﻿namespace MSILEmulator.Instructions.Logic;
 
-            ctx.Stack.Push(~val);
-        }
+internal class Not
+{
+    public static void Emulate(Context ctx)
+    {
+        int val = (int)ctx.Stack.Pop();
+
+        ctx.Stack.Push(~val);
     }
 }

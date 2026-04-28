@@ -1,24 +1,23 @@
 ﻿using SharpDisasm;
 using System.Collections.Generic;
 
-namespace X86Emulator.Instructions
+namespace X86Emulator.Instructions;
+
+internal class Neg : Instruction
 {
-    internal class Neg : Instruction
+    private Operand Operand;
+
+    public Neg(Operand operand)
     {
-        private Operand Operand;
+        Operand = operand;
+    }
 
-        public Neg(Operand operand)
-        {
-            Operand = operand;
-        }
+    public override void Emulate(Stack<int> stack, Registers registers)
+    {
+        int val = registers.GetValue(Operand.Base);
 
-        public override void Emulate(Stack<int> stack, Registers registers)
-        {
-            int val = registers.GetValue(Operand.Base);
+        val = -val;
 
-            val = -val;
-
-            registers.SetValue(Operand.Base, val);
-        }
+        registers.SetValue(Operand.Base, val);
     }
 }

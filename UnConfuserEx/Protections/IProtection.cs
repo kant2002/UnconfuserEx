@@ -1,13 +1,12 @@
 ﻿using dnlib.DotNet;
 
-namespace UnConfuserEx.Protections
+namespace UnConfuserEx.Protections;
+
+internal interface IProtection
 {
-    internal interface IProtection
-    {
-        string Name { get; }
+    string Name { get; }
 
-        public bool IsPresent(ref ModuleDefMD module);
+    public bool IsPresent(ref ModuleDefMD module);
 
-        public bool Remove(ref ModuleDefMD module);
-    }
+    public bool Remove(ref ModuleDefMD module);
 }

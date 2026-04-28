@@ -2,82 +2,81 @@
 using dnlib.DotNet.Emit;
 using System.Collections.Generic;
 
-namespace UnConfuserEx.Protections.AntiDump
+namespace UnConfuserEx.Protections.AntiDump;
+
+internal class AntiDumpRemover : IProtection
 {
-    internal class AntiDumpRemover : IProtection
+    public string Name => "AntiDump";
+
+    int callIndex;
+    MethodDef? antiDumpMethod;
+
+    public bool IsPresent(ref ModuleDefMD module)
     {
-        public string Name => "AntiDump";
+        var cctor = module.GlobalType.FindStaticConstructor();
 
-        int callIndex;
-        MethodDef? antiDumpMethod;
+        if (cctor == null || !(cctor.HasBody) || cctor.Body.Instructions.Count == 0)
+            return false;
 
-        public bool IsPresent(ref ModuleDefMD module)
+        IList<Instruction> instrs;
+
+        // Check the first calls in the constructor
+        callIndex = 0;
+        while (cctor.Body.Instructions[callIndex].OpCode == OpCodes.Call)
         {
-            var cctor = module.GlobalType.FindStaticConstructor();
-
-            if (cctor == null || !(cctor.HasBody) || cctor.Body.Instructions.Count == 0)
-                return false;
-
-            IList<Instruction> instrs;
-
-            // Check the first calls in the constructor
-            callIndex = 0;
-            while (cctor.Body.Instructions[callIndex].OpCode == OpCodes.Call)
+            var method = cctor.Body.Instructions[callIndex].Operand as MethodDef;
+            if (!method!.HasBody)
             {
-                var method = cctor.Body.Instructions[callIndex].Operand as MethodDef;
-                if (!method!.HasBody)
-                {
-                    callIndex++;
-                    continue;
-                }
-
-                instrs = method!.Body.Instructions;
-                if (instrs.Count > 6 &&
-                    instrs[0].OpCode == OpCodes.Ldtoken &&
-                    (TypeDef)instrs[0].Operand == module.GlobalType &&
-                    instrs[5].OpCode == OpCodes.Call &&
-                    ((IMethodDefOrRef)instrs[5].Operand).MethodSig.ToString() == "System.IntPtr (System.Reflection.Module)")
-                {
-                    antiDumpMethod = method;
-                    return true;
-                }
                 callIndex++;
+                continue;
             }
-            callIndex = -1;
 
-
-            // Then check the body itself
-            instrs = cctor.Body.Instructions;
+            instrs = method!.Body.Instructions;
             if (instrs.Count > 6 &&
                 instrs[0].OpCode == OpCodes.Ldtoken &&
                 (TypeDef)instrs[0].Operand == module.GlobalType &&
                 instrs[5].OpCode == OpCodes.Call &&
-                ((IMethodDefOrRef)instrs[5].Operand).Name == "GetHINSTANCE")
+                ((IMethodDefOrRef)instrs[5].Operand).MethodSig.ToString() == "System.IntPtr (System.Reflection.Module)")
             {
-                antiDumpMethod = cctor;
+                antiDumpMethod = method;
                 return true;
             }
-
-            return false;
+            callIndex++;
         }
+        callIndex = -1;
 
-        public bool Remove(ref ModuleDefMD module)
+
+        // Then check the body itself
+        instrs = cctor.Body.Instructions;
+        if (instrs.Count > 6 &&
+            instrs[0].OpCode == OpCodes.Ldtoken &&
+            (TypeDef)instrs[0].Operand == module.GlobalType &&
+            instrs[5].OpCode == OpCodes.Call &&
+            ((IMethodDefOrRef)instrs[5].Operand).Name == "GetHINSTANCE")
         {
-            var cctor = module.GlobalType.FindStaticConstructor();
-
-            if (antiDumpMethod == cctor)
-            {
-                // TODO: This will cause issues if any protections were injected afterwards...
-                cctor.Body.Instructions.Clear();
-                cctor.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
-            }
-            else
-            {
-                cctor.Body.Instructions.RemoveAt(callIndex);
-                module.GlobalType.Methods.Remove(antiDumpMethod);
-            }
-
+            antiDumpMethod = cctor;
             return true;
         }
+
+        return false;
+    }
+
+    public bool Remove(ref ModuleDefMD module)
+    {
+        var cctor = module.GlobalType.FindStaticConstructor();
+
+        if (antiDumpMethod == cctor)
+        {
+            // TODO: This will cause issues if any protections were injected afterwards...
+            cctor.Body.Instructions.Clear();
+            cctor.Body.Instructions.Add(Instruction.Create(OpCodes.Ret));
+        }
+        else
+        {
+            cctor.Body.Instructions.RemoveAt(callIndex);
+            module.GlobalType.Methods.Remove(antiDumpMethod);
+        }
+
+        return true;
     }
 }
