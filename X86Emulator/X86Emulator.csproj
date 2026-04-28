@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="dnlib" Version="4.4.0" />
-    <PackageReference Include="SharpDisasm" Version="1.1.11" />
+    <PackageReference Include="dnlib" />
+    <PackageReference Include="SharpDisasm" />
   </ItemGroup>
 
 </Project>

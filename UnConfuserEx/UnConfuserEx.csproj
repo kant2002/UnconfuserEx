@@ -15,11 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutomaticGraphLayout.GraphViewerGDI" Version="1.1.12" />
-    <PackageReference Include="dnlib" Version="4.4.0" />
-    <PackageReference Include="de4dot.blocks" Version="3.3.0-ci-72" />
-    <PackageReference Include="log4net" Version="3.0.3" />
-    <PackageReference Include="LZMA-SDK" Version="22.1.1" />
+    <PackageReference Include="AutomaticGraphLayout.GraphViewerGDI" />
+    <PackageReference Include="dnlib" />
+    <PackageReference Include="de4dot.blocks" />
+    <PackageReference Include="log4net" />
+    <PackageReference Include="LZMA-SDK" />
   </ItemGroup>
 
   <ItemGroup>
