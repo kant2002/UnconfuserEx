@@ -27,7 +27,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Publish
-      run: dotnet publish --no-build --verbosity normal
+      run: dotnet publish
 
     - uses: actions/upload-artifact@v5
       if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
